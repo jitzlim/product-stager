@@ -672,13 +672,13 @@ function ConfigureTab({ config, onChange, onGenerate, selectedProductCount }) {
       {/* Creative Direction */}
       <div style={{ marginBottom: 32 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-          <span style={{ fontSize: 14 }}>⚡</span>
-          <Label>Creative Direction</Label>
+          <span style={{ fontSize: 14 }}>🧍</span>
+          <Label>Model Appearance</Label>
         </div>
         <textarea
           value={customInstructions}
           onChange={(e) => onChange({ customInstructions: e.target.value })}
-          placeholder="Describe the mood, lighting, and specific composition details... (e.g. Cinematic lighting, focus on texture, high-speed motion)"
+          placeholder="e.g. wearing a red oversized hoodie, olive skin tone, sleeve tattoo on left arm, long braided hair..."
           rows={4}
           style={{
             width: '100%',
