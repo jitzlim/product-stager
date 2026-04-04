@@ -1123,7 +1123,7 @@ function GalleryTab({ results, isGenerating, progress, onDownload, onDownloadAll
 
 // ─── Main App ─────────────────────────────────────────────────────────────────
 
-const DEFAULT_SELECTED_BGS = ['BEDROOM', 'OUTDOOR', 'TABLE', 'CAR', 'GYM']
+const DEFAULT_SELECTED_BGS = []
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState('upload')
@@ -1132,7 +1132,7 @@ export default function Home() {
   const [config, setConfig] = useState({
     handModel:          'neutral',
     selectedBgs:        DEFAULT_SELECTED_BGS,
-    smartMix:           true,
+    smartMix:           false,
     customInstructions: '',
   })
 
