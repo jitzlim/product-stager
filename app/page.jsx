@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { BACKGROUNDS, buildPrompt } from '@/lib/backgrounds'
 
 // ─── Design Tokens ────────────────────────────────────────────────────────────
@@ -273,9 +273,117 @@ function GalleryIcon({ size = 22, color }) {
   )
 }
 
+// ─── History Panel ────────────────────────────────────────────────────────────
+
+function HistoryPanel({ history, onClose, onDownload }) {
+  if (history.length === 0) {
+    return (
+      <div style={{
+        position: 'fixed', inset: 0, zIndex: 200,
+        background: C.base,
+        maxWidth: 430, margin: '0 auto',
+        display: 'flex', flexDirection: 'column',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '52px 20px 20px' }}>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, padding: 4 }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+            </svg>
+          </button>
+          <Label>Generation History</Label>
+        </div>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: C.muted }}>
+          <div style={{ fontSize: 48, marginBottom: 12 }}>🕐</div>
+          <div style={{ fontWeight: 700, fontSize: 15, color: 'white' }}>No history yet</div>
+          <div style={{ fontSize: 13, marginTop: 6 }}>Completed batches will appear here.</div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 200,
+      background: C.base,
+      maxWidth: 430, margin: '0 auto',
+      overflowY: 'auto',
+    }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '52px 20px 20px', position: 'sticky', top: 0, background: C.base, zIndex: 10 }}>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, padding: 4 }}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+          </svg>
+        </button>
+        <div>
+          <Label>Generation History</Label>
+          <div style={{ color: C.muted, fontSize: 12, marginTop: 2 }}>{history.length} batch{history.length !== 1 ? 'es' : ''} this session</div>
+        </div>
+      </div>
+
+      {/* Batches — newest first */}
+      <div style={{ padding: '0 20px 40px', display: 'flex', flexDirection: 'column', gap: 28 }}>
+        {[...history].reverse().map((batch, bi) => (
+          <div key={batch.id}>
+            {/* Batch header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: 14, color: 'white' }}>
+                  Batch {history.length - bi}
+                </div>
+                <div style={{ fontFamily: 'Manrope, sans-serif', fontSize: 11, color: C.muted, marginTop: 2 }}>
+                  {batch.timestamp} · {batch.results.length} image{batch.results.length !== 1 ? 's' : ''} · {batch.handModel}
+                </div>
+              </div>
+              <button
+                onClick={() => batch.results.forEach(r => onDownload(r))}
+                style={{ background: 'none', border: `1px solid ${C.ghost}`, borderRadius: 9999, padding: '6px 14px', color: C.primary, fontWeight: 700, fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}
+              >
+                Save All
+              </button>
+            </div>
+
+            {/* Thumbnails */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+              {batch.results.map((result) => (
+                <div
+                  key={result.id}
+                  style={{ position: 'relative', borderRadius: 12, overflow: 'hidden', aspectRatio: '9/16', background: C.high, cursor: 'pointer' }}
+                  onClick={() => onDownload(result)}
+                >
+                  <img
+                    src={`data:${result.imageMimeType};base64,${result.imageBase64}`}
+                    alt={result.productName}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                  {/* Download hint overlay */}
+                  <div style={{
+                    position: 'absolute', bottom: 0, left: 0, right: 0,
+                    background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)',
+                    padding: '16px 6px 6px',
+                    display: 'flex', justifyContent: 'flex-end',
+                  }}>
+                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: gradCTA, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ─── App Header ───────────────────────────────────────────────────────────────
 
-function AppHeader() {
+function AppHeader({ historyCount, onHistoryOpen }) {
   return (
     <div style={{
       display: 'flex',
@@ -303,11 +411,27 @@ function AppHeader() {
           KINETIC
         </span>
       </div>
-      <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, padding: 4 }}>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="3"/>
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      {/* History button */}
+      <button
+        onClick={onHistoryOpen}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', color: historyCount > 0 ? C.primary : C.muted, padding: 4, position: 'relative' }}
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
         </svg>
+        {historyCount > 0 && (
+          <div style={{
+            position: 'absolute', top: 0, right: 0,
+            width: 16, height: 16,
+            borderRadius: '50%',
+            background: gradCTA,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 9, fontWeight: 900, color: 'white',
+            fontFamily: 'Manrope, sans-serif',
+          }}>
+            {historyCount}
+          </div>
+        )}
       </button>
     </div>
   )
@@ -740,9 +864,9 @@ function ConfigureTab({ config, onChange, onGenerate, selectedProductCount }) {
 
 // ─── Generate Tab (Progress) ──────────────────────────────────────────────────
 
-function GenerateTab({ progress, isGenerating, products, onCancel, onGoGallery }) {
+function GenerateTab({ progress, animatedPercent, isGenerating, products, onCancel, onGoGallery }) {
   const percent = progress.total > 0
-    ? Math.round((progress.current / progress.total) * 100)
+    ? Math.round(animatedPercent)
     : 0
 
   const done = !isGenerating && progress.total > 0
@@ -1140,10 +1264,48 @@ export default function Home() {
   const [products, setProducts] = useState([])
 
   // Results
-  const [results,      setResults]      = useState([])
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [progress,     setProgress]     = useState({ current: 0, total: 0 })
-  const [errors,       setErrors]       = useState([])
+  const [results,         setResults]         = useState([])
+  const [isGenerating,    setIsGenerating]    = useState(false)
+  const [progress,        setProgress]        = useState({ current: 0, total: 0 })
+  const [errors,          setErrors]          = useState([])
+  const [animatedPercent, setAnimatedPercent] = useState(0)
+
+  // History — previous batches this session
+  const [history,      setHistory]      = useState([])
+  const [showHistory,  setShowHistory]  = useState(false)
+
+  // Animate the progress ring while waiting for each API call.
+  // Ticks toward a "soft ceiling" just below the next real step so
+  // the ring always moves while generating, then snaps forward when
+  // an item actually finishes.
+  useEffect(() => {
+    if (!isGenerating || progress.total === 0) return
+
+    const realPercent = Math.round((progress.current / progress.total) * 100)
+    // Soft ceiling: 90 % of the way into the *current* slot
+    const slotSize    = 100 / progress.total
+    const ceiling     = realPercent + slotSize * 0.9
+
+    const id = setInterval(() => {
+      setAnimatedPercent(prev => {
+        // Snap up to real value first (item just finished)
+        const base = Math.max(prev, realPercent)
+        if (base >= ceiling) return base
+        // Ease toward ceiling; slows as it approaches
+        const step = Math.max(0.15, (ceiling - base) * 0.04)
+        return Math.min(ceiling, base + step)
+      })
+    }, 120)
+
+    return () => clearInterval(id)
+  }, [isGenerating, progress])
+
+  // Snap to 100 % when done, reset when a new batch starts
+  useEffect(() => {
+    if (!isGenerating && progress.total > 0) {
+      setAnimatedPercent(100)
+    }
+  }, [isGenerating, progress.total])
 
   const updateConfig = (partial) => setConfig(prev => ({ ...prev, ...partial }))
   const selectedProducts = products.filter(p => p.selected)
@@ -1180,6 +1342,7 @@ export default function Home() {
     setErrors([])
     setResults([])
     setProgress({ current: 0, total: selectedProducts.length })
+    setAnimatedPercent(0)
     setActiveTab('generate')
 
     const newResults = []
@@ -1226,23 +1389,77 @@ export default function Home() {
     }
   }
 
-  // ── Download ───────────────────────────────────────────────────────────────
+  // ── Download (iOS → Photos via Web Share; desktop → file) ─────────────────
 
-  const handleDownload = (result) => {
+  const handleDownload = async (result) => {
+    const dataUrl  = `data:${result.imageMimeType};base64,${result.imageBase64}`
+    const filename = `${result.productName.toLowerCase().replace(/\s+/g, '-')}-staged.jpg`
+
+    try {
+      if (navigator.share) {
+        const blob = await (await fetch(dataUrl)).blob()
+        const file = new File([blob], filename, { type: 'image/jpeg' })
+        if (navigator.canShare?.({ files: [file] })) {
+          await navigator.share({ files: [file] })
+          return
+        }
+      }
+    } catch (err) {
+      if (err.name === 'AbortError') return // user cancelled share sheet
+    }
+
+    // Desktop fallback
     const link   = document.createElement('a')
-    link.href     = `data:${result.imageMimeType};base64,${result.imageBase64}`
-    link.download = `${result.productName.toLowerCase().replace(/\s+/g, '-')}-staged.jpg`
+    link.href     = dataUrl
+    link.download = filename
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
   }
 
+  const handleDownloadAll = async (targetResults) => {
+    const list = targetResults ?? results
+    if (list.length === 0) return
+
+    try {
+      if (navigator.share) {
+        const files = await Promise.all(
+          list.map(async (r) => {
+            const blob = await (await fetch(`data:${r.imageMimeType};base64,${r.imageBase64}`)).blob()
+            return new File([blob], `${r.productName.toLowerCase().replace(/\s+/g, '-')}-staged.jpg`, { type: 'image/jpeg' })
+          })
+        )
+        if (navigator.canShare?.({ files })) {
+          await navigator.share({ files })
+          return
+        }
+      }
+    } catch (err) {
+      if (err.name === 'AbortError') return
+    }
+
+    // Desktop fallback — download one by one
+    list.forEach(r => handleDownload(r))
+  }
+
   // ── New Batch ──────────────────────────────────────────────────────────────
 
   const handleNewBatch = () => {
+    // Archive current results into history before clearing
+    if (results.length > 0) {
+      const now = new Date()
+      const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      setHistory(prev => [...prev, {
+        id:        Date.now(),
+        timestamp: timeStr,
+        handModel: config.handModel,
+        results:   [...results],
+      }])
+    }
     setResults([])
     setErrors([])
     setProgress({ current: 0, total: 0 })
+    setAnimatedPercent(0)
     setActiveTab('upload')
   }
 
@@ -1256,7 +1473,16 @@ export default function Home() {
       margin: '0 auto',
       position: 'relative',
     }}>
-      <AppHeader />
+      <AppHeader historyCount={history.length} onHistoryOpen={() => setShowHistory(true)} />
+
+      {/* History panel (full-screen overlay) */}
+      {showHistory && (
+        <HistoryPanel
+          history={history}
+          onClose={() => setShowHistory(false)}
+          onDownload={handleDownload}
+        />
+      )}
 
       {/* Scrollable content */}
       <div style={{ paddingBottom: 120 }}>
@@ -1282,6 +1508,7 @@ export default function Home() {
         {activeTab === 'generate' && (
           <GenerateTab
             progress={progress}
+            animatedPercent={animatedPercent}
             isGenerating={isGenerating}
             products={products}
             onCancel={() => setIsGenerating(false)}
@@ -1295,7 +1522,7 @@ export default function Home() {
             isGenerating={isGenerating}
             progress={progress}
             onDownload={handleDownload}
-            onDownloadAll={() => results.forEach(handleDownload)}
+            onDownloadAll={() => handleDownloadAll(results)}
             onNewBatch={handleNewBatch}
           />
         )}
