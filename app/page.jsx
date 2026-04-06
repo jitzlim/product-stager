@@ -608,8 +608,9 @@ function UploadTab({ products, onFilesAdded, onToggleProduct, onSelectAll, onDel
 // ─── Configure Tab ────────────────────────────────────────────────────────────
 
 function ConfigureTab({ config, onChange, onGenerate, selectedProductCount }) {
-  const { handModel, selectedBgs, smartMix, customInstructions } = config
-  const canGenerate = selectedProductCount > 0 && selectedBgs.length > 0
+  const { handModel, selectedBgs, smartMix, customInstructions, iterations } = config
+  const totalImages  = selectedProductCount * iterations
+  const canGenerate  = selectedProductCount > 0 && selectedBgs.length > 0
 
   const toggleBg = (id) => {
     onChange({
@@ -724,6 +725,74 @@ function ConfigureTab({ config, onChange, onGenerate, selectedProductCount }) {
         </div>
       </div>
 
+      {/* Iterations */}
+      <div style={{ marginBottom: 24 }}>
+        <div style={{
+          ...glassBase,
+          borderRadius: 18,
+          padding: '16px 18px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}>
+          <div>
+            <Label>Iterations per Product</Label>
+            <div style={{ color: C.muted, fontSize: 12, marginTop: 4, lineHeight: 1.4 }}>
+              {iterations === 1
+                ? 'One variation per product'
+                : `${iterations} variations per product`}
+            </div>
+          </div>
+          {/* Stepper */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+            <button
+              onClick={() => onChange({ iterations: Math.max(1, iterations - 1) })}
+              disabled={iterations <= 1}
+              style={{
+                width: 36, height: 36,
+                borderRadius: '50%',
+                background: iterations <= 1 ? 'rgba(255,255,255,0.05)' : C.high,
+                border: `1px solid ${C.ghost}`,
+                color: iterations <= 1 ? C.faint : 'white',
+                fontSize: 20,
+                fontWeight: 300,
+                cursor: iterations <= 1 ? 'default' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                lineHeight: 1,
+              }}
+            >−</button>
+            <div style={{
+              minWidth: 40,
+              textAlign: 'center',
+              fontFamily: 'Manrope, sans-serif',
+              fontWeight: 900,
+              fontSize: 26,
+              color: 'white',
+              lineHeight: 1,
+            }}>
+              {iterations}
+            </div>
+            <button
+              onClick={() => onChange({ iterations: Math.min(5, iterations + 1) })}
+              disabled={iterations >= 5}
+              style={{
+                width: 36, height: 36,
+                borderRadius: '50%',
+                background: iterations >= 5 ? 'rgba(255,255,255,0.05)' : gradCTA,
+                border: 'none',
+                color: iterations >= 5 ? C.faint : 'white',
+                fontSize: 20,
+                fontWeight: 300,
+                cursor: iterations >= 5 ? 'default' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                lineHeight: 1,
+                boxShadow: iterations >= 5 ? 'none' : `0 0 12px rgba(165,165,255,0.3)`,
+              }}
+            >+</button>
+          </div>
+        </div>
+      </div>
+
       {/* Environments */}
       <div style={{ marginBottom: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
@@ -833,20 +902,37 @@ function ConfigureTab({ config, onChange, onGenerate, selectedProductCount }) {
         padding: '14px 16px',
         display: 'flex',
         alignItems: 'center',
-        gap: 12,
+        gap: 14,
         marginBottom: 20,
       }}>
-        <div style={{ fontSize: 28 }}>📸</div>
-        <div>
+        <div style={{ fontSize: 26 }}>📸</div>
+        <div style={{ flex: 1 }}>
           <div style={{ fontWeight: 700, fontSize: 14, color: 'white' }}>
-            {selectedProductCount > 0 ? `${selectedProductCount} Product${selectedProductCount > 1 ? 's' : ''}` : 'No products selected'}
+            {selectedProductCount > 0
+              ? iterations > 1
+                ? `${selectedProductCount} × ${iterations} = ${totalImages} images`
+                : `${selectedProductCount} product${selectedProductCount > 1 ? 's' : ''}`
+              : 'No products selected'}
           </div>
-          <div style={{ fontFamily: 'Manrope, sans-serif', fontSize: 11, color: C.muted, marginTop: 2 }}>
+          <div style={{ fontFamily: 'Manrope, sans-serif', fontSize: 11, color: C.muted, marginTop: 3 }}>
             {selectedBgs.length > 0
-              ? `${selectedBgs.length} environment${selectedBgs.length > 1 ? 's' : ''} • Smart Mix ${smartMix ? 'ON' : 'OFF'}`
+              ? `${selectedBgs.length} env${selectedBgs.length > 1 ? 's' : ''} · Smart Mix ${smartMix ? 'ON' : 'OFF'} · ${iterations} iteration${iterations > 1 ? 's' : ''}`
               : 'Select at least one environment'}
           </div>
         </div>
+        {/* Total pill */}
+        {selectedProductCount > 0 && selectedBgs.length > 0 && iterations > 1 && (
+          <div style={{
+            background: 'rgba(165,165,255,0.12)',
+            borderRadius: 9999,
+            padding: '4px 12px',
+            flexShrink: 0,
+          }}>
+            <span style={{ fontFamily: 'Manrope, sans-serif', fontSize: 13, fontWeight: 900, color: C.primary }}>
+              {totalImages}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Generate CTA */}
@@ -855,7 +941,9 @@ function ConfigureTab({ config, onChange, onGenerate, selectedProductCount }) {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
           </svg>
-          Generate Lifestyle Images
+          {canGenerate
+            ? `Generate · ${selectedProductCount} × ${iterations} = ${totalImages}`
+            : 'Generate Lifestyle Images'}
         </GradientButton>
       </div>
     </div>
@@ -1040,11 +1128,17 @@ function GalleryTab({ results, isGenerating, progress, onDownload, onDownloadAll
     })
   }
 
-  const handleDownloadSelected = () => {
-    results.filter(r => selected.has(r.id)).forEach(r => onDownload(r))
-  }
+  // Group results by productId, preserving product order
+  const groups = results.reduce((acc, r) => {
+    const key = r.productId ?? r.productName
+    if (!acc.find(g => g.key === key)) {
+      acc.push({ key, productName: r.productName, items: [] })
+    }
+    acc.find(g => g.key === key).items.push(r)
+    return acc
+  }, [])
 
-  const accuracy = 94 + Math.floor(Math.random() * 5)
+  const hasMultipleIterations = results.some(r => r.iteration > 1)
 
   return (
     <div style={{ padding: '0 20px', animation: 'fadeUp 0.3s ease both' }}>
@@ -1058,7 +1152,7 @@ function GalleryTab({ results, isGenerating, progress, onDownload, onDownloadAll
           </span>
         </h1>
         <p style={{ color: C.muted, fontSize: 14, margin: 0, lineHeight: 1.5 }}>
-          {results.length} lifestyle asset{results.length !== 1 ? 's' : ''} generated. Ready for distribution.
+          {results.length} image{results.length !== 1 ? 's' : ''} across {groups.length} product{groups.length !== 1 ? 's' : ''}. Ready for distribution.
         </p>
       </div>
 
@@ -1068,26 +1162,26 @@ function GalleryTab({ results, isGenerating, progress, onDownload, onDownloadAll
           onClick={onNewBatch}
           style={{ background: 'none', border: 'none', color: C.primary, fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}
         >
-          Try New Batch
+          New Batch
         </button>
         <div style={{ marginLeft: 'auto' }}>
           {selected.size > 0 ? (
-            <GradientButton onClick={handleDownloadSelected} small>
+            <GradientButton onClick={() => results.filter(r => selected.has(r.id)).forEach(r => onDownload(r))} small>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="7 10 12 15 17 10"/>
                 <line x1="12" y1="15" x2="12" y2="3"/>
               </svg>
-              Download ({selected.size})
+              Save ({selected.size})
             </GradientButton>
           ) : (
-            <GradientButton onClick={() => results.forEach(r => onDownload(r))} small>
+            <GradientButton onClick={() => onDownloadAll(results)} small>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="7 10 12 15 17 10"/>
                 <line x1="12" y1="15" x2="12" y2="3"/>
               </svg>
-              Download All
+              Save All
             </GradientButton>
           )}
         </div>
@@ -1106,104 +1200,148 @@ function GalleryTab({ results, isGenerating, progress, onDownload, onDownloadAll
         }}>
           <Spinner size={16} />
           <span style={{ fontSize: 13, color: C.muted }}>
-            Still rendering... {progress.current}/{progress.total} complete
+            Rendering... {progress.current}/{progress.total} complete
           </span>
         </div>
       )}
 
-      {/* Masonry grid */}
-      {results.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
-          {results.map((result, i) => {
-            const isSel = selected.has(result.id)
-            const isTall = i % 3 === 0
-            return (
-              <div
-                key={result.id}
-                onClick={() => toggleSelect(result.id)}
-                style={{
-                  position: 'relative',
-                  borderRadius: 16,
-                  overflow: 'hidden',
-                  aspectRatio: isTall ? '9/16' : '3/4',
-                  cursor: 'pointer',
-                  outline: isSel ? `2px solid ${C.primary}` : '2px solid transparent',
-                  boxShadow: isSel ? `0 0 20px rgba(165,165,255,0.2)` : 'none',
-                  transition: 'outline 0.15s',
-                }}
-              >
-                <img
-                  src={`data:${result.imageMimeType};base64,${result.imageBase64}`}
-                  alt={result.productName}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-                {/* READY badge */}
-                <div style={{
-                  position: 'absolute', top: 8, right: 8,
-                  background: C.lime,
-                  borderRadius: 9999,
-                  padding: '3px 8px',
-                }}>
-                  <span style={{ fontFamily: 'Manrope, sans-serif', fontSize: 9, fontWeight: 900, color: '#0e0e13', letterSpacing: 1 }}>
-                    READY
-                  </span>
+      {/* Results grouped by product */}
+      {groups.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 28, marginBottom: 20 }}>
+          {groups.map((group) => (
+            <div key={group.key}>
+              {/* Product section header — only show if multiple products or multiple iterations */}
+              {(groups.length > 1 || hasMultipleIterations) && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontWeight: 800, fontSize: 13, color: 'white', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }}>
+                      {group.productName}
+                    </span>
+                    <div style={{ background: 'rgba(165,165,255,0.12)', borderRadius: 9999, padding: '2px 8px' }}>
+                      <span style={{ fontFamily: 'Manrope, sans-serif', fontSize: 11, fontWeight: 800, color: C.primary }}>
+                        {group.items.length}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => group.items.forEach(r => onDownload(r))}
+                    style={{ background: 'none', border: 'none', color: C.muted, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
+                  >
+                    Save group
+                  </button>
                 </div>
-                {/* Select badge */}
-                {isSel && (
-                  <div style={{
-                    position: 'absolute', top: 8, left: 8,
-                    width: 22, height: 22,
-                    borderRadius: 7,
-                    background: gradCTA,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>
+              )}
+
+              {/* Images for this product */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                {group.items.map((result) => {
+                  const isSel = selected.has(result.id)
+                  return (
+                    <div
+                      key={result.id}
+                      onClick={() => toggleSelect(result.id)}
+                      style={{
+                        position: 'relative',
+                        borderRadius: 16,
+                        overflow: 'hidden',
+                        aspectRatio: '9/16',
+                        cursor: 'pointer',
+                        outline: isSel ? `2px solid ${C.primary}` : '2px solid transparent',
+                        boxShadow: isSel ? `0 0 20px rgba(165,165,255,0.2)` : 'none',
+                        transition: 'outline 0.15s',
+                      }}
+                    >
+                      <img
+                        src={`data:${result.imageMimeType};base64,${result.imageBase64}`}
+                        alt={result.productName}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                      {/* Iteration badge */}
+                      {hasMultipleIterations && (
+                        <div style={{
+                          position: 'absolute', top: 8, left: 8,
+                          background: 'rgba(0,0,0,0.6)',
+                          borderRadius: 9999,
+                          padding: '3px 8px',
+                          backdropFilter: 'blur(8px)',
+                        }}>
+                          <span style={{ fontFamily: 'Manrope, sans-serif', fontSize: 9, fontWeight: 900, color: 'white', letterSpacing: 1 }}>
+                            #{result.iteration}
+                          </span>
+                        </div>
+                      )}
+                      {/* READY badge */}
+                      <div style={{
+                        position: 'absolute', top: 8, right: 8,
+                        background: C.lime,
+                        borderRadius: 9999,
+                        padding: '3px 8px',
+                      }}>
+                        <span style={{ fontFamily: 'Manrope, sans-serif', fontSize: 9, fontWeight: 900, color: '#0e0e13', letterSpacing: 1 }}>
+                          READY
+                        </span>
+                      </div>
+                      {/* Select badge */}
+                      {isSel && (
+                        <div style={{
+                          position: 'absolute', top: 8, left: 8,
+                          width: 22, height: 22,
+                          borderRadius: 7,
+                          background: gradCTA,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="20 6 9 17 4 12"/>
                     </svg>
-                  </div>
-                )}
-                {/* Bottom overlay */}
-                <div style={{
-                  position: 'absolute', bottom: 0, left: 0, right: 0,
-                  background: 'linear-gradient(to top, rgba(0,0,0,0.9), transparent)',
-                  padding: '28px 10px 10px',
-                  display: 'flex',
-                  alignItems: 'flex-end',
-                  justifyContent: 'space-between',
-                }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ color: 'white', fontSize: 10, fontWeight: 700, fontFamily: 'Manrope, sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {result.productName}
+                        </div>
+                      )}
+                      {/* Bottom overlay */}
+                      <div style={{
+                        position: 'absolute', bottom: 0, left: 0, right: 0,
+                        background: 'linear-gradient(to top, rgba(0,0,0,0.9), transparent)',
+                        padding: '24px 10px 10px',
+                        display: 'flex',
+                        alignItems: 'flex-end',
+                        justifyContent: 'space-between',
+                      }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ color: C.muted, fontSize: 10, fontFamily: 'Manrope, sans-serif' }}>
+                            {result.background?.replace('_', ' ')}
+                          </div>
+                        </div>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onDownload(result) }}
+                          style={{
+                            width: 30, height: 30,
+                            borderRadius: '50%',
+                            background: gradCTA,
+                            border: 'none',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            cursor: 'pointer',
+                            flexShrink: 0,
+                          }}
+                        >
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                          </svg>
+                        </button>
+                      </div>
                     </div>
-                    <div style={{ color: C.muted, fontSize: 10 }}>Hold to compare</div>
-                  </div>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onDownload(result) }}
-                    style={{
-                      width: 32, height: 32,
-                      borderRadius: '50%',
-                      background: gradCTA,
-                      border: 'none',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      cursor: 'pointer',
-                      flexShrink: 0,
-                      boxShadow: gradGlow,
-                    }}
-                  >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                      <polyline points="7 10 12 15 17 10"/>
-                      <line x1="12" y1="15" x2="12" y2="3"/>
-                    </svg>
-                  </button>
-                </div>
+                  )
+                })}
               </div>
-            )
-          })}
 
-          {/* Loading placeholders */}
-          {isGenerating && Array.from({ length: progress.total - progress.current }).map((_, i) => (
-            <div key={`ph-${i}`} style={{ borderRadius: 16, overflow: 'hidden', aspectRatio: '3/4' }} className="skeleton" />
+              {/* Loading placeholders — only show under last group while generating */}
+              {isGenerating && group === groups[groups.length - 1] && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 10 }}>
+                  {Array.from({ length: progress.total - progress.current }).map((_, i) => (
+                    <div key={`ph-${i}`} style={{ borderRadius: 16, overflow: 'hidden', aspectRatio: '9/16' }} className="skeleton" />
+                  ))}
+                </div>
+              )}
+            </div>
           ))}
         </div>
       )}
@@ -1258,6 +1396,7 @@ export default function Home() {
     selectedBgs:        DEFAULT_SELECTED_BGS,
     smartMix:           false,
     customInstructions: '',
+    iterations:         1,
   })
 
   // Products
@@ -1338,49 +1477,61 @@ export default function Home() {
   const handleGenerate = async () => {
     if (selectedProducts.length === 0 || config.selectedBgs.length === 0 || isGenerating) return
 
+    const { iterations } = config
+    const total = selectedProducts.length * iterations
+
     setIsGenerating(true)
     setErrors([])
     setResults([])
-    setProgress({ current: 0, total: selectedProducts.length })
+    setProgress({ current: 0, total })
     setAnimatedPercent(0)
     setActiveTab('generate')
 
     const newResults = []
+    let completed = 0
 
     for (let i = 0; i < selectedProducts.length; i++) {
       const product = selectedProducts[i]
       const bgPool  = config.selectedBgs
-      const bgId    = config.smartMix
-        ? bgPool[Math.floor(Math.random() * bgPool.length)]
-        : bgPool[i % bgPool.length]
 
-      const prompt = buildPrompt(config.handModel, bgId, config.customInstructions)
+      for (let iter = 0; iter < iterations; iter++) {
+        // Smart Mix ON → random env each time
+        // Smart Mix OFF → cycle through selected envs per iteration index
+        const bgId = config.smartMix
+          ? bgPool[Math.floor(Math.random() * bgPool.length)]
+          : bgPool[iter % bgPool.length]
 
-      try {
-        const res  = await fetch('/api/generate', {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ productImageBase64: product.base64, mimeType: product.mimeType, prompt }),
-        })
-        const data = await res.json()
+        const prompt = buildPrompt(config.handModel, bgId, config.customInstructions)
 
-        if (data.imageBase64) {
-          newResults.push({
-            id:            `result-${Date.now()}-${i}`,
-            productName:   product.name,
-            imageBase64:   data.imageBase64,
-            imageMimeType: data.mimeType ?? 'image/jpeg',
-            background:    bgId,
+        try {
+          const res  = await fetch('/api/generate', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ productImageBase64: product.base64, mimeType: product.mimeType, prompt }),
           })
-          setResults([...newResults])
-        } else {
-          setErrors(prev => [...prev, `${product.name}: ${data.error ?? 'Failed'}`])
-        }
-      } catch {
-        setErrors(prev => [...prev, `${product.name}: Network error`])
+          const data = await res.json()
+
+          if (data.imageBase64) {
+            newResults.push({
+              id:            `result-${Date.now()}-${i}-${iter}`,
+              productId:     product.id,
+              productName:   product.name,
+              iteration:     iter + 1,
+              imageBase64:   data.imageBase64,
+              imageMimeType: data.mimeType ?? 'image/jpeg',
+              background:    bgId,
+            })
+            setResults([...newResults])
+          } else {
+            setErrors(prev => [...prev, `${product.name} #${iter + 1}: ${data.error ?? 'Failed'}`])
+          }
+        } catch {
+          setErrors(prev => [...prev, `${product.name} #${iter + 1}: Network error`])
       }
 
-      setProgress({ current: i + 1, total: selectedProducts.length })
+        completed++
+        setProgress({ current: completed, total })
+      }
     }
 
     setIsGenerating(false)
