@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { BACKGROUNDS, buildPrompt } from '@/lib/backgrounds'
+import { BACKGROUNDS, PROMPT_TEMPLATES, buildPrompt } from '@/lib/backgrounds'
 
 // ─── Design Tokens ────────────────────────────────────────────────────────────
 const C = {
@@ -16,6 +16,7 @@ const C = {
   ghost:        'rgba(72,71,77,0.15)',
   muted:        'rgba(255,255,255,0.5)',
   faint:        'rgba(255,255,255,0.25)',
+  danger:       '#ff6b6b',
 }
 
 const gradCTA   = `linear-gradient(135deg, ${C.primary} 0%, ${C.secondary} 100%)`
@@ -106,6 +107,36 @@ function Spinner({ size = 20, color = C.primary }) {
   )
 }
 
+function Toast({ message }) {
+  if (!message) return null
+  return (
+    <div style={{
+      position: 'fixed',
+      bottom: 90,
+      left: '50%',
+      transform: 'translateX(-50%)',
+      background: 'rgba(31,31,38,0.96)',
+      border: `1px solid rgba(165,165,255,0.2)`,
+      borderRadius: 9999,
+      padding: '10px 22px',
+      zIndex: 500,
+      color: 'white',
+      fontWeight: 700,
+      fontSize: 13,
+      fontFamily: 'Plus Jakarta Sans, sans-serif',
+      whiteSpace: 'nowrap',
+      boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
+      backdropFilter: 'blur(16px)',
+      WebkitBackdropFilter: 'blur(16px)',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8,
+    }}>
+      {message}
+    </div>
+  )
+}
+
 // ─── Circular Progress Ring ───────────────────────────────────────────────────
 
 function CircularProgress({ percent }) {
@@ -126,9 +157,7 @@ function CircularProgress({ percent }) {
             <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
           </filter>
         </defs>
-        {/* Track */}
         <circle cx="100" cy="100" r={r} fill="none" stroke={C.high} strokeWidth="8" />
-        {/* Progress */}
         <circle
           cx="100" cy="100" r={r}
           fill="none"
@@ -308,7 +337,6 @@ function HistoryPanel({ history, onClose, onDownload, onClearAll }) {
       maxWidth: 430, margin: '0 auto',
       overflowY: 'auto',
     }}>
-      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '52px 20px 20px', position: 'sticky', top: 0, background: C.base, zIndex: 10 }}>
         <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, padding: 4 }}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -327,11 +355,9 @@ function HistoryPanel({ history, onClose, onDownload, onClearAll }) {
         </button>
       </div>
 
-      {/* Batches — newest first */}
       <div style={{ padding: '0 20px 40px', display: 'flex', flexDirection: 'column', gap: 28 }}>
         {[...history].reverse().map((batch, bi) => (
           <div key={batch.id}>
-            {/* Batch header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
               <div>
                 <div style={{ fontWeight: 800, fontSize: 14, color: 'white' }}>
@@ -349,7 +375,6 @@ function HistoryPanel({ history, onClose, onDownload, onClearAll }) {
               </button>
             </div>
 
-            {/* Thumbnails */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
               {batch.results.map((result) => (
                 <div
@@ -362,7 +387,6 @@ function HistoryPanel({ history, onClose, onDownload, onClearAll }) {
                     alt={result.productName}
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
-                  {/* Download hint overlay */}
                   <div style={{
                     position: 'absolute', bottom: 0, left: 0, right: 0,
                     background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)',
@@ -417,7 +441,6 @@ function AppHeader({ historyCount, onHistoryOpen }) {
           KINETIC
         </span>
       </div>
-      {/* History button */}
       <button
         onClick={onHistoryOpen}
         style={{ background: 'none', border: 'none', cursor: 'pointer', color: historyCount > 0 ? C.primary : C.muted, padding: 4, position: 'relative' }}
@@ -456,7 +479,6 @@ function UploadTab({ products, onFilesAdded, onToggleProduct, onSelectAll, onDel
 
   return (
     <div style={{ padding: '0 20px', animation: 'fadeUp 0.3s ease both' }}>
-      {/* Hero */}
       <div style={{ marginBottom: 28 }}>
         <Label color={C.primary}>Product Upload</Label>
         <h1 style={{ fontSize: 32, fontWeight: 900, margin: '8px 0 8px', lineHeight: 1.1 }}>
@@ -470,7 +492,6 @@ function UploadTab({ products, onFilesAdded, onToggleProduct, onSelectAll, onDel
         </p>
       </div>
 
-      {/* Drop zone */}
       <div
         onClick={() => fileInputRef.current?.click()}
         onDrop={handleDrop}
@@ -517,7 +538,6 @@ function UploadTab({ products, onFilesAdded, onToggleProduct, onSelectAll, onDel
         onChange={(e) => onFilesAdded(e.target.files)}
       />
 
-      {/* Product queue */}
       {products.length > 0 && (
         <>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
@@ -538,7 +558,7 @@ function UploadTab({ products, onFilesAdded, onToggleProduct, onSelectAll, onDel
                 Select All
               </button>
               {selectedCount > 0 && (
-                <button onClick={onDeleteSelected} style={{ background: 'none', border: 'none', color: '#ff6b6b', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
+                <button onClick={onDeleteSelected} style={{ background: 'none', border: 'none', color: C.danger, fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
                   Delete ({selectedCount})
                 </button>
               )}
@@ -568,7 +588,6 @@ function UploadTab({ products, onFilesAdded, onToggleProduct, onSelectAll, onDel
                   alt={product.name}
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
-                {/* Selection badge */}
                 <div style={{
                   position: 'absolute', top: 8, left: 8,
                   width: 22, height: 22,
@@ -584,7 +603,6 @@ function UploadTab({ products, onFilesAdded, onToggleProduct, onSelectAll, onDel
                     </svg>
                   )}
                 </div>
-                {/* Name */}
                 <div style={{
                   position: 'absolute', bottom: 0, left: 0, right: 0,
                   background: 'linear-gradient(to top, rgba(0,0,0,0.85), transparent)',
@@ -617,6 +635,8 @@ const ASPECT_RATIOS = ['9:16', '1:1', '4:3', '16:9']
 
 function ConfigureTab({ config, onChange, onGenerate, selectedProductCount, presets, activePreset, onSavePreset, onLoadPreset, onDeletePreset }) {
   const { handModel, selectedBgs, smartMix, customInstructions, iterations, aspectRatio } = config
+function ConfigureTab({ config, onChange, onGenerate, selectedProductCount }) {
+  const { handModel, selectedBgs, smartMix, customInstructions, iterations, promptTemplate } = config
   const totalImages  = selectedProductCount * iterations
   const canGenerate  = selectedProductCount > 0 && selectedBgs.length > 0
 
@@ -630,7 +650,6 @@ function ConfigureTab({ config, onChange, onGenerate, selectedProductCount, pres
 
   return (
     <div style={{ padding: '0 20px', animation: 'fadeUp 0.3s ease both' }}>
-      {/* Hero */}
       <div style={{ marginBottom: 28 }}>
         <Label color={C.primary}>Staging Config</Label>
         <h1 style={{ fontSize: 32, fontWeight: 900, margin: '8px 0 8px', lineHeight: 1.1 }}>
@@ -774,7 +793,6 @@ function ConfigureTab({ config, onChange, onGenerate, selectedProductCount, pres
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <Label>Smart Mix</Label>
             </div>
-            {/* Toggle */}
             <button
               onClick={() => onChange({ smartMix: !smartMix })}
               style={{
@@ -825,7 +843,6 @@ function ConfigureTab({ config, onChange, onGenerate, selectedProductCount, pres
                 : `${iterations} variations per product`}
             </div>
           </div>
-          {/* Stepper */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
             <button
               onClick={() => onChange({ iterations: Math.max(1, iterations - 1) })}
@@ -904,6 +921,38 @@ function ConfigureTab({ config, onChange, onGenerate, selectedProductCount, pres
               {ratio}
             </button>
           ))}
+      {/* Photo Style — F-07 */}
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+          <Label>Photo Style</Label>
+          <div style={{ width: 6, height: 6, borderRadius: '50%', background: C.primary, boxShadow: `0 0 8px ${C.primary}` }} />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          {PROMPT_TEMPLATES.map((tmpl) => {
+            const isActive = promptTemplate === tmpl.id
+            return (
+              <button
+                key={tmpl.id}
+                onClick={() => onChange({ promptTemplate: tmpl.id })}
+                style={{
+                  borderRadius: 16,
+                  padding: '14px 12px',
+                  border: isActive ? `1.5px solid ${C.primary}` : `1px solid ${C.ghost}`,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  background: isActive ? 'rgba(165,165,255,0.1)' : 'rgba(19,19,24,0.7)',
+                  boxShadow: isActive ? `0 0 16px rgba(165,165,255,0.15)` : 'none',
+                  transition: 'all 0.15s',
+                  backdropFilter: 'blur(20px)',
+                  WebkitBackdropFilter: 'blur(20px)',
+                }}
+              >
+                <div style={{ fontSize: 20, marginBottom: 6 }}>{tmpl.emoji}</div>
+                <div style={{ fontWeight: 800, fontSize: 13, color: isActive ? 'white' : C.muted, fontFamily: 'Plus Jakarta Sans, sans-serif' }}>{tmpl.label}</div>
+                <div style={{ fontFamily: 'Manrope, sans-serif', fontSize: 10, color: C.muted, marginTop: 2, lineHeight: 1.4 }}>{tmpl.description}</div>
+              </button>
+            )
+          })}
         </div>
       </div>
 
@@ -936,18 +985,15 @@ function ConfigureTab({ config, onChange, onGenerate, selectedProductCount, pres
                   boxShadow: isSelected ? `0 0 16px rgba(165,165,255,0.25)` : 'none',
                 }}
               >
-                {/* Overlay for selected */}
                 {isSelected && (
                   <div style={{
                     position: 'absolute', inset: 0,
                     background: 'rgba(165,165,255,0.15)',
                   }} />
                 )}
-                {/* Emoji */}
                 <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -70%)', fontSize: 24 }}>
                   {bg.emoji}
                 </div>
-                {/* Label */}
                 <div style={{
                   position: 'absolute', bottom: 0, left: 0, right: 0,
                   background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)',
@@ -957,7 +1003,6 @@ function ConfigureTab({ config, onChange, onGenerate, selectedProductCount, pres
                     {bg.label.toUpperCase()}
                   </span>
                 </div>
-                {/* Selected badge */}
                 {isSelected && (
                   <div style={{
                     position: 'absolute', top: 7, right: 7,
@@ -1002,7 +1047,6 @@ function ConfigureTab({ config, onChange, onGenerate, selectedProductCount, pres
             boxSizing: 'border-box',
             caretColor: C.primary,
             transition: 'border-color 0.2s',
-            '::placeholder': { color: C.muted },
           }}
           onFocus={(e) => { e.target.style.borderColor = `rgba(165,165,255,0.4)` }}
           onBlur={(e) => { e.target.style.borderColor = 'transparent' }}
@@ -1034,7 +1078,6 @@ function ConfigureTab({ config, onChange, onGenerate, selectedProductCount, pres
               : 'Select at least one environment'}
           </div>
         </div>
-        {/* Total pill */}
         {selectedProductCount > 0 && selectedBgs.length > 0 && iterations > 1 && (
           <div style={{
             background: 'rgba(165,165,255,0.12)',
@@ -1049,7 +1092,6 @@ function ConfigureTab({ config, onChange, onGenerate, selectedProductCount, pres
         )}
       </div>
 
-      {/* Generate CTA */}
       <div style={{ display: 'flex', justifyContent: 'center', paddingBottom: 8 }}>
         <GradientButton onClick={onGenerate} disabled={!canGenerate}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -1070,15 +1112,18 @@ function GenerateTab({ progress, animatedPercent, isGenerating, products, onCanc
   const avgElapsed = timings.length > 0
     ? Math.round(timings.reduce((a, b) => a + b, 0) / timings.length / 1000)
     : 15
+function GenerateTab({ progress, animatedPercent, isGenerating, products, onCancel, onGoGallery, failedItems }) {
   const percent = progress.total > 0
     ? Math.round(animatedPercent)
     : 0
 
   const done = !isGenerating && progress.total > 0
 
+  const productHasFailed = (product) =>
+    failedItems.some(f => f.productId === product.id)
+
   return (
     <div style={{ padding: '0 20px', animation: 'fadeUp 0.3s ease both' }}>
-      {/* Header */}
       <div style={{ marginBottom: 32, textAlign: 'center' }}>
         <Label color={C.secondaryDim}>
           {isGenerating ? 'System Engine Active' : done ? 'Generation Complete' : 'Ready to Generate'}
@@ -1092,14 +1137,12 @@ function GenerateTab({ progress, animatedPercent, isGenerating, products, onCanc
         </h1>
       </div>
 
-      {/* Circular ring */}
       {(isGenerating || done) && (
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
           <CircularProgress percent={done ? 100 : percent} />
         </div>
       )}
 
-      {/* Buttons */}
       <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 32, flexWrap: 'wrap' }}>
         {done && (
           <GradientButton onClick={onGoGallery}>
@@ -1113,7 +1156,6 @@ function GenerateTab({ progress, animatedPercent, isGenerating, products, onCanc
         )}
       </div>
 
-      {/* Current step */}
       {isGenerating && (
         <div style={{ marginBottom: 20 }}>
           <Label color={C.muted}>Current Step</Label>
@@ -1137,7 +1179,6 @@ function GenerateTab({ progress, animatedPercent, isGenerating, products, onCanc
         </div>
       )}
 
-      {/* Batch queue */}
       {(isGenerating || done) && progress.total > 0 && (
         <div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
@@ -1163,6 +1204,9 @@ function GenerateTab({ progress, animatedPercent, isGenerating, products, onCanc
               const productAvg = productTimings.length > 0
                 ? Math.round(productTimings.reduce((a, b) => a + b, 0) / productTimings.length / 1000)
                 : null
+              const isDone   = i < progress.current
+              const isActive = i === progress.current && isGenerating
+              const hasFail  = isDone && productHasFailed(product)
               return (
                 <div
                   key={product.id}
@@ -1175,7 +1219,6 @@ function GenerateTab({ progress, animatedPercent, isGenerating, products, onCanc
                     background: isActive ? 'rgba(165,165,255,0.05)' : 'none',
                   }}
                 >
-                  {/* Thumbnail */}
                   <div style={{
                     width: 40, height: 40,
                     borderRadius: 10,
@@ -1193,11 +1236,15 @@ function GenerateTab({ progress, animatedPercent, isGenerating, products, onCanc
                       {isDone
                         ? productAvg !== null ? `Complete · ${productAvg}s avg` : 'Complete'
                         : isActive ? 'Processing...' : 'Queued'}
+                    <div style={{ fontFamily: 'Manrope, sans-serif', fontSize: 11, color: hasFail ? C.danger : C.muted, marginTop: 2 }}>
+                      {isDone ? (hasFail ? 'Partially failed' : 'Complete') : isActive ? 'Processing...' : 'Queued'}
                     </div>
                   </div>
                   <div>
                     {isDone
-                      ? <span style={{ color: C.lime, fontSize: 16 }}>✓</span>
+                      ? hasFail
+                        ? <span style={{ color: C.danger, fontSize: 16 }}>✗</span>
+                        : <span style={{ color: C.lime, fontSize: 16 }}>✓</span>
                       : isActive
                         ? <Spinner size={16} />
                         : <div style={{ width: 8, height: 8, borderRadius: '50%', background: C.bright }} />
@@ -1206,7 +1253,6 @@ function GenerateTab({ progress, animatedPercent, isGenerating, products, onCanc
                 </div>
               )
             })}
-            {/* Estimated remaining */}
             {isGenerating && (
               <div style={{
                 padding: '12px 16px',
@@ -1227,7 +1273,6 @@ function GenerateTab({ progress, animatedPercent, isGenerating, products, onCanc
         </div>
       )}
 
-      {/* Idle state */}
       {!isGenerating && progress.total === 0 && (
         <div style={{ textAlign: 'center', padding: '20px 0', color: C.muted }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>⚡</div>
@@ -1241,10 +1286,134 @@ function GenerateTab({ progress, animatedPercent, isGenerating, products, onCanc
   )
 }
 
+// ─── Lightbox — F-06 ─────────────────────────────────────────────────────────
+
+function Lightbox({ results, initialId, onClose, onDownload }) {
+  const initialIdx = results.findIndex(r => r.id === initialId)
+  const [curIdx, setCurIdx] = useState(initialIdx >= 0 ? initialIdx : 0)
+  const touchStartX = useRef(null)
+
+  const curResult = results[curIdx]
+  const canPrev = curIdx > 0
+  const canNext = curIdx < results.length - 1
+
+  const goPrev = () => { if (canPrev) setCurIdx(i => i - 1) }
+  const goNext = () => { if (canNext) setCurIdx(i => i + 1) }
+
+  useEffect(() => {
+    const handleKey = (e) => {
+      if (e.key === 'ArrowLeft')  goPrev()
+      if (e.key === 'ArrowRight') goNext()
+      if (e.key === 'Escape')     onClose()
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [curIdx])
+
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX
+  }
+  const handleTouchEnd = (e) => {
+    if (touchStartX.current === null) return
+    const delta = e.changedTouches[0].clientX - touchStartX.current
+    if (Math.abs(delta) > 50) {
+      if (delta < 0) goNext()
+      else goPrev()
+    }
+    touchStartX.current = null
+  }
+
+  if (!curResult) return null
+
+  return (
+    <div
+      style={{
+        position: 'fixed', inset: 0, zIndex: 300,
+        background: 'rgba(0,0,0,0.97)',
+        display: 'flex', flexDirection: 'column',
+        maxWidth: 430, margin: '0 auto',
+      }}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Header */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '52px 20px 12px',
+        flexShrink: 0,
+      }}>
+        <div>
+          <div style={{ fontWeight: 800, fontSize: 15, color: 'white' }}>{curResult.productName}</div>
+          <div style={{ fontFamily: 'Manrope, sans-serif', fontSize: 11, color: C.muted, marginTop: 2 }}>
+            {curResult.background?.replace(/_/g, ' ')} · #{curResult.iteration}
+          </div>
+        </div>
+        <button
+          onClick={onClose}
+          style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white', flexShrink: 0 }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      {/* Image + Nav */}
+      <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+        <img
+          src={`data:${curResult.imageMimeType};base64,${curResult.imageBase64}`}
+          alt={curResult.productName}
+          style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }}
+        />
+        {canPrev && (
+          <button
+            onClick={(e) => { e.stopPropagation(); goPrev() }}
+            style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '50%', width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+          </button>
+        )}
+        {canNext && (
+          <button
+            onClick={(e) => { e.stopPropagation(); goNext() }}
+            style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '50%', width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </button>
+        )}
+      </div>
+
+      {/* Counter */}
+      <div style={{ textAlign: 'center', padding: '8px 0', color: C.muted, fontFamily: 'Manrope, sans-serif', fontSize: 12, flexShrink: 0 }}>
+        {curIdx + 1} / {results.length}
+      </div>
+
+      {/* Footer */}
+      <div style={{ display: 'flex', gap: 12, padding: '12px 20px 36px', justifyContent: 'center', flexShrink: 0 }}>
+        <GradientButton onClick={() => onDownload(curResult)}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Download
+        </GradientButton>
+      </div>
+    </div>
+  )
+}
+
 // ─── Gallery Tab ──────────────────────────────────────────────────────────────
 
-function GalleryTab({ results, isGenerating, progress, onDownload, onDownloadAll, onNewBatch }) {
-  const [selected, setSelected] = useState(new Set())
+function GalleryTab({ results, isGenerating, progress, onDownload, onDownloadAll, onNewBatch, failedItems, onRetryFailed, onRegenerate, regeneratingIds }) {
+  const [selected, setSelected]   = useState(new Set())
+  const [lightbox, setLightbox]   = useState({ open: false, resultId: null })
+  const longPressTimer            = useRef(null)
+  const accuracy                  = 99
 
   const toggleSelect = (id) => {
     setSelected(prev => {
@@ -1254,7 +1423,36 @@ function GalleryTab({ results, isGenerating, progress, onDownload, onDownloadAll
     })
   }
 
-  // Group results by productId, preserving product order
+  const openLightbox  = (result) => setLightbox({ open: true, resultId: result.id })
+  const closeLightbox = () => setLightbox({ open: false, resultId: null })
+
+  // Long-press detection for mobile selection
+  const handleCardTouchStart = (resultId) => () => {
+    longPressTimer.current = window.setTimeout(() => {
+      longPressTimer.current = null
+      toggleSelect(resultId)
+    }, 380)
+  }
+  const handleCardTouchMove = () => {
+    if (longPressTimer.current !== null) {
+      clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
+    }
+  }
+  const handleCardTouchEnd = (result) => (e) => {
+    if (longPressTimer.current !== null) {
+      clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
+      e.preventDefault()
+      openLightbox(result)
+    }
+  }
+  // Desktop click (touch devices call preventDefault above, suppressing this)
+  const handleCardClick = (result) => {
+    openLightbox(result)
+  }
+
+  // Group results by productId
   const groups = results.reduce((acc, r) => {
     const key = r.productId ?? r.productName
     if (!acc.find(g => g.key === key)) {
@@ -1266,8 +1464,20 @@ function GalleryTab({ results, isGenerating, progress, onDownload, onDownloadAll
 
   const hasMultipleIterations = results.some(r => r.iteration > 1)
 
+  const retriesRemaining = failedItems.filter(f => f.retryCount < 3).length
+
   return (
     <div style={{ padding: '0 20px', animation: 'fadeUp 0.3s ease both' }}>
+      {/* Lightbox — F-06 */}
+      {lightbox.open && (
+        <Lightbox
+          results={results}
+          initialId={lightbox.resultId}
+          onClose={closeLightbox}
+          onDownload={onDownload}
+        />
+      )}
+
       {/* Hero */}
       <div style={{ marginBottom: 20 }}>
         <Label color={C.primary}>Curation Hub</Label>
@@ -1331,12 +1541,55 @@ function GalleryTab({ results, isGenerating, progress, onDownload, onDownloadAll
         </div>
       )}
 
+      {/* F-09: Error recovery banner */}
+      {!isGenerating && failedItems.length > 0 && (
+        <div style={{
+          background: 'rgba(255,107,107,0.08)',
+          border: `1px solid rgba(255,107,107,0.25)`,
+          borderRadius: 14,
+          padding: '12px 16px',
+          marginBottom: 16,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+        }}>
+          <div style={{ fontSize: 18, flexShrink: 0 }}>⚠️</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 700, fontSize: 13, color: C.danger }}>
+              {failedItems.length} image{failedItems.length !== 1 ? 's' : ''} failed
+            </div>
+            <div style={{ fontFamily: 'Manrope, sans-serif', fontSize: 11, color: C.muted, marginTop: 2 }}>
+              {failedItems[0].errorMessage}
+              {failedItems.length > 1 ? ` +${failedItems.length - 1} more` : ''}
+            </div>
+          </div>
+          {retriesRemaining > 0 && (
+            <button
+              onClick={onRetryFailed}
+              style={{
+                background: 'rgba(255,107,107,0.15)',
+                border: `1px solid rgba(255,107,107,0.3)`,
+                borderRadius: 9999,
+                padding: '7px 14px',
+                color: C.danger,
+                fontWeight: 700,
+                fontSize: 12,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                flexShrink: 0,
+              }}
+            >
+              Retry Failed
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Results grouped by product */}
       {groups.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 28, marginBottom: 20 }}>
           {groups.map((group) => (
             <div key={group.key}>
-              {/* Product section header — only show if multiple products or multiple iterations */}
               {(groups.length > 1 || hasMultipleIterations) && (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1358,14 +1611,17 @@ function GalleryTab({ results, isGenerating, progress, onDownload, onDownloadAll
                 </div>
               )}
 
-              {/* Images for this product */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 {group.items.map((result) => {
-                  const isSel = selected.has(result.id)
+                  const isSel        = selected.has(result.id)
+                  const isRegen      = regeneratingIds.has(result.id)
                   return (
                     <div
                       key={result.id}
-                      onClick={() => toggleSelect(result.id)}
+                      onClick={() => handleCardClick(result)}
+                      onTouchStart={handleCardTouchStart(result.id)}
+                      onTouchMove={handleCardTouchMove}
+                      onTouchEnd={handleCardTouchEnd(result)}
                       style={{
                         position: 'relative',
                         borderRadius: 16,
@@ -1382,8 +1638,22 @@ function GalleryTab({ results, isGenerating, progress, onDownload, onDownloadAll
                         alt={result.productName}
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       />
+
+                      {/* Regenerating overlay — F-08 */}
+                      {isRegen && (
+                        <div style={{
+                          position: 'absolute', inset: 0,
+                          background: 'rgba(0,0,0,0.72)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          flexDirection: 'column', gap: 8,
+                        }}>
+                          <Spinner size={28} />
+                          <span style={{ fontFamily: 'Manrope, sans-serif', fontSize: 10, color: C.muted, letterSpacing: 1 }}>REGENERATING</span>
+                        </div>
+                      )}
+
                       {/* Iteration badge */}
-                      {hasMultipleIterations && (
+                      {hasMultipleIterations && !isSel && (
                         <div style={{
                           position: 'absolute', top: 8, left: 8,
                           background: 'rgba(0,0,0,0.6)',
@@ -1396,6 +1666,7 @@ function GalleryTab({ results, isGenerating, progress, onDownload, onDownloadAll
                           </span>
                         </div>
                       )}
+
                       {/* READY badge */}
                       <div style={{
                         position: 'absolute', top: 8, right: 8,
@@ -1407,20 +1678,28 @@ function GalleryTab({ results, isGenerating, progress, onDownload, onDownloadAll
                           READY
                         </span>
                       </div>
-                      {/* Select badge */}
-                      {isSel && (
-                        <div style={{
+
+                      {/* Select badge — clicking selects without opening lightbox */}
+                      <div
+                        onClick={(e) => { e.stopPropagation(); toggleSelect(result.id) }}
+                        style={{
                           position: 'absolute', top: 8, left: 8,
                           width: 22, height: 22,
                           borderRadius: 7,
-                          background: gradCTA,
+                          background: isSel ? gradCTA : 'rgba(0,0,0,0.4)',
+                          border: isSel ? 'none' : `1.5px solid rgba(255,255,255,0.4)`,
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        }}>
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12"/>
-                    </svg>
-                        </div>
-                      )}
+                          cursor: 'pointer',
+                          zIndex: 10,
+                        }}
+                      >
+                        {isSel && (
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12"/>
+                          </svg>
+                        )}
+                      </div>
+
                       {/* Bottom overlay */}
                       <div style={{
                         position: 'absolute', bottom: 0, left: 0, right: 0,
@@ -1432,38 +1711,64 @@ function GalleryTab({ results, isGenerating, progress, onDownload, onDownloadAll
                       }}>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ color: C.muted, fontSize: 10, fontFamily: 'Manrope, sans-serif' }}>
-                            {result.background?.replace('_', ' ')}
+                            {result.background?.replace(/_/g, ' ')}
                           </div>
                         </div>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); onDownload(result) }}
-                          style={{
-                            width: 30, height: 30,
-                            borderRadius: '50%',
-                            background: gradCTA,
-                            border: 'none',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            cursor: 'pointer',
-                            flexShrink: 0,
-                          }}
-                        >
-                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                            <polyline points="7 10 12 15 17 10"/>
-                            <line x1="12" y1="15" x2="12" y2="3"/>
-                          </svg>
-                        </button>
+                        <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                          {/* Regenerate button — F-08 */}
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onRegenerate(result) }}
+                            disabled={isRegen}
+                            style={{
+                              width: 30, height: 30,
+                              borderRadius: '50%',
+                              background: 'rgba(255,255,255,0.15)',
+                              border: 'none',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              cursor: isRegen ? 'default' : 'pointer',
+                              flexShrink: 0,
+                              opacity: isRegen ? 0.5 : 1,
+                            }}
+                          >
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M23 4v6h-6"/>
+                              <path d="M1 20v-6h6"/>
+                              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                            </svg>
+                          </button>
+                          {/* Download button */}
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onDownload(result) }}
+                            style={{
+                              width: 30, height: 30,
+                              borderRadius: '50%',
+                              background: gradCTA,
+                              border: 'none',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              cursor: 'pointer',
+                              flexShrink: 0,
+                            }}
+                          >
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                              <polyline points="7 10 12 15 17 10"/>
+                              <line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )
                 })}
               </div>
 
-              {/* Loading placeholders — only show under last group while generating */}
+              {/* Loading placeholders while generating */}
               {isGenerating && group === groups[groups.length - 1] && (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 10 }}>
                   {Array.from({ length: progress.total - progress.current }).map((_, i) => (
                     <div key={`ph-${i}`} style={{ borderRadius: 16, overflow: 'hidden', aspectRatio: (results[0]?.aspectRatio || '9:16').replace(':', '/') }} className="skeleton" />
+                  {Array.from({ length: Math.max(0, progress.total - progress.current) }).map((_, i) => (
+                    <div key={`ph-${i}`} style={{ borderRadius: 16, overflow: 'hidden', aspectRatio: '9/16' }} className="skeleton" />
                   ))}
                 </div>
               )}
@@ -1524,6 +1829,7 @@ export default function Home() {
     customInstructions: '',
     iterations:         1,
     aspectRatio:        '9:16',
+    promptTemplate:     'ugc',
   })
 
   // Products
@@ -1533,8 +1839,22 @@ export default function Home() {
   const [results,         setResults]         = useState([])
   const [isGenerating,    setIsGenerating]    = useState(false)
   const [progress,        setProgress]        = useState({ current: 0, total: 0 })
-  const [errors,          setErrors]          = useState([])
+  const [errors,          setErrors]          = useState([]) // structured: {productId, product, bgId, iter, errorMessage, retryCount}
   const [animatedPercent, setAnimatedPercent] = useState(0)
+  const [regeneratingIds, setRegeneratingIds] = useState(new Set())
+  const [toast,           setToast]           = useState(null)
+
+  // History
+  const [history,     setHistory]     = useState([])
+  const [showHistory, setShowHistory] = useState(false)
+
+  // ── Toast helper ────────────────────────────────────────────────────────────
+  const showToast = useCallback((msg, duration = 2500) => {
+    setToast(msg)
+    if (duration > 0) {
+      setTimeout(() => setToast(null), duration)
+    }
+  }, [])
 
   // History — previous batches this session
   const [history,      setHistory]      = useState([])
@@ -1554,20 +1874,18 @@ export default function Home() {
   // Ticks toward a "soft ceiling" just below the next real step so
   // the ring always moves while generating, then snaps forward when
   // an item actually finishes.
+  // ── Progress ring animation ─────────────────────────────────────────────────
   useEffect(() => {
     if (!isGenerating || progress.total === 0) return
 
     const realPercent = Math.round((progress.current / progress.total) * 100)
-    // Soft ceiling: 90 % of the way into the *current* slot
     const slotSize    = 100 / progress.total
     const ceiling     = realPercent + slotSize * 0.9
 
     const id = setInterval(() => {
       setAnimatedPercent(prev => {
-        // Snap up to real value first (item just finished)
         const base = Math.max(prev, realPercent)
         if (base >= ceiling) return base
-        // Ease toward ceiling; slows as it approaches
         const step = Math.max(0.15, (ceiling - base) * 0.04)
         return Math.min(ceiling, base + step)
       })
@@ -1576,7 +1894,6 @@ export default function Home() {
     return () => clearInterval(id)
   }, [isGenerating, progress])
 
-  // Snap to 100 % when done, reset when a new batch starts
   useEffect(() => {
     if (!isGenerating && progress.total > 0) {
       setAnimatedPercent(100)
@@ -1670,6 +1987,7 @@ export default function Home() {
   }
 
   // ── File handling ──────────────────────────────────────────────────────────
+  // ── File handling ───────────────────────────────────────────────────────────
 
   const handleFilesAdded = useCallback((files) => {
     Array.from(files).forEach((file) => {
@@ -1692,7 +2010,7 @@ export default function Home() {
     })
   }, [])
 
-  // ── Generation ─────────────────────────────────────────────────────────────
+  // ── Generation ──────────────────────────────────────────────────────────────
 
   const handleGenerate = async () => {
     if (selectedProducts.length === 0 || config.selectedBgs.length === 0 || isGenerating) return
@@ -1716,13 +2034,12 @@ export default function Home() {
       const bgPool  = config.selectedBgs
 
       for (let iter = 0; iter < iterations; iter++) {
-        // Smart Mix ON → random env each time
-        // Smart Mix OFF → cycle through selected envs per iteration index
         const bgId = config.smartMix
           ? bgPool[Math.floor(Math.random() * bgPool.length)]
           : bgPool[iter % bgPool.length]
 
         const prompt = buildPrompt(config.handModel, bgId, config.customInstructions, config.aspectRatio)
+        const prompt = buildPrompt(config.handModel, bgId, config.customInstructions, config.promptTemplate)
 
         try {
           const t0   = Date.now()
@@ -1748,11 +2065,25 @@ export default function Home() {
             })
             setResults([...newResults])
           } else {
-            setErrors(prev => [...prev, `${product.name} #${iter + 1}: ${data.error ?? 'Failed'}`])
+            setErrors(prev => [...prev, {
+              productId:    product.id,
+              product:      { id: product.id, name: product.name, base64: product.base64, mimeType: product.mimeType },
+              bgId,
+              iter:         iter + 1,
+              errorMessage: data.error ?? 'Failed',
+              retryCount:   0,
+            }])
           }
         } catch {
-          setErrors(prev => [...prev, `${product.name} #${iter + 1}: Network error`])
-      }
+          setErrors(prev => [...prev, {
+            productId:    product.id,
+            product:      { id: product.id, name: product.name, base64: product.base64, mimeType: product.mimeType },
+            bgId,
+            iter:         iter + 1,
+            errorMessage: 'Network error',
+            retryCount:   0,
+          }])
+        }
 
         completed++
         setProgress({ current: completed, total })
@@ -1765,7 +2096,104 @@ export default function Home() {
     }
   }
 
-  // ── Download (iOS → Photos via Web Share; desktop → file) ─────────────────
+  // ── Retry Failed — F-09 ──────────────────────────────────────────────────────
+
+  const handleRetryFailed = async () => {
+    const toRetry = errors.filter(f => f.retryCount < 3)
+    if (toRetry.length === 0) return
+
+    setIsGenerating(true)
+    setErrors([])
+    setProgress({ current: 0, total: toRetry.length })
+    setAnimatedPercent(0)
+    setActiveTab('generate')
+
+    const newErrors = []
+    let completed = 0
+
+    for (const failure of toRetry) {
+      const { product, bgId, iter, retryCount } = failure
+      const prompt = buildPrompt(config.handModel, bgId, config.customInstructions, config.promptTemplate)
+
+      try {
+        const res  = await fetch('/api/generate', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ productImageBase64: product.base64, mimeType: product.mimeType, prompt }),
+        })
+        const data = await res.json()
+
+        if (data.imageBase64) {
+          const newResult = {
+            id:            `result-${Date.now()}-retry-${iter}`,
+            productId:     product.id,
+            productName:   product.name,
+            iteration:     iter,
+            imageBase64:   data.imageBase64,
+            imageMimeType: data.mimeType ?? 'image/jpeg',
+            background:    bgId,
+          }
+          setResults(prev => [...prev, newResult])
+        } else {
+          newErrors.push({ ...failure, errorMessage: data.error ?? 'Failed', retryCount: retryCount + 1 })
+        }
+      } catch {
+        newErrors.push({ ...failure, errorMessage: 'Network error', retryCount: retryCount + 1 })
+      }
+
+      completed++
+      setProgress({ current: completed, total: toRetry.length })
+    }
+
+    setErrors(newErrors)
+    setIsGenerating(false)
+    setTimeout(() => setActiveTab('gallery'), 600)
+  }
+
+  // ── Regenerate Single Image — F-08 ──────────────────────────────────────────
+
+  const handleRegenerate = async (result) => {
+    const product = products.find(p => p.id === result.productId)
+    if (!product || regeneratingIds.has(result.id)) return
+
+    setRegeneratingIds(prev => new Set([...prev, result.id]))
+
+    const bgId   = result.background
+    const prompt = buildPrompt(config.handModel, bgId, config.customInstructions, config.promptTemplate)
+
+    try {
+      const res  = await fetch('/api/generate', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ productImageBase64: product.base64, mimeType: product.mimeType, prompt }),
+      })
+      const data = await res.json()
+
+      if (data.imageBase64) {
+        const newResult = {
+          id:            `result-${Date.now()}-regen`,
+          productId:     product.id,
+          productName:   product.name,
+          iteration:     result.iteration,
+          imageBase64:   data.imageBase64,
+          imageMimeType: data.mimeType ?? 'image/jpeg',
+          background:    bgId,
+        }
+        // Add new result without removing original
+        setResults(prev => [...prev, newResult])
+      }
+    } catch {
+      // silently fail — original card remains
+    } finally {
+      setRegeneratingIds(prev => {
+        const next = new Set(prev)
+        next.delete(result.id)
+        return next
+      })
+    }
+  }
+
+  // ── Download (iOS → Photos via Web Share; desktop → JSZip) — F-05 ───────────
 
   const handleDownload = async (result) => {
     const dataUrl  = `data:${result.imageMimeType};base64,${result.imageBase64}`
@@ -1781,11 +2209,10 @@ export default function Home() {
         }
       }
     } catch (err) {
-      if (err.name === 'AbortError') return // user cancelled share sheet
+      if (err.name === 'AbortError') return
     }
 
-    // Desktop fallback
-    const link   = document.createElement('a')
+    const link    = document.createElement('a')
     link.href     = dataUrl
     link.download = filename
     document.body.appendChild(link)
@@ -1797,8 +2224,9 @@ export default function Home() {
     const list = targetResults ?? results
     if (list.length === 0) return
 
-    try {
-      if (navigator.share) {
+    // Mobile → Web Share API
+    if (navigator.share) {
+      try {
         const files = await Promise.all(
           list.map(async (r) => {
             const blob = await (await fetch(`data:${r.imageMimeType};base64,${r.imageBase64}`)).blob()
@@ -1809,21 +2237,45 @@ export default function Home() {
           await navigator.share({ files })
           return
         }
+      } catch (err) {
+        if (err.name === 'AbortError') return
       }
-    } catch (err) {
-      if (err.name === 'AbortError') return
     }
 
-    // Desktop fallback — download one by one
-    list.forEach(r => handleDownload(r))
+    // Desktop → JSZip bundle
+    showToast('Creating zip…', 0)
+    try {
+      const JSZipModule = await import('jszip')
+      const JSZip = JSZipModule.default
+      const zip   = new JSZip()
+
+      for (const r of list) {
+        const folder   = zip.folder(r.productName)
+        const blob     = await (await fetch(`data:${r.imageMimeType};base64,${r.imageBase64}`)).blob()
+        const filename = `image-${r.iteration ?? 1}.jpg`
+        folder.file(filename, blob)
+      }
+
+      const content = await zip.generateAsync({ type: 'blob' })
+      const url     = URL.createObjectURL(content)
+      const link    = document.createElement('a')
+      link.href     = url
+      link.download = 'staged-products.zip'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+      showToast('Zip downloaded!')
+    } catch {
+      showToast('Download failed — try saving individually')
+    }
   }
 
-  // ── New Batch ──────────────────────────────────────────────────────────────
+  // ── New Batch ────────────────────────────────────────────────────────────────
 
   const handleNewBatch = () => {
-    // Archive current results into history before clearing
     if (results.length > 0) {
-      const now = new Date()
+      const now     = new Date()
       const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       setHistory(prev => [...prev, {
         id:        Date.now(),
@@ -1839,7 +2291,7 @@ export default function Home() {
     setActiveTab('upload')
   }
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
     <div style={{
@@ -1851,7 +2303,6 @@ export default function Home() {
     }}>
       <AppHeader historyCount={history.length} onHistoryOpen={() => setShowHistory(true)} />
 
-      {/* History panel (full-screen overlay) */}
       {showHistory && (
         <HistoryPanel
           history={history}
@@ -1861,7 +2312,8 @@ export default function Home() {
         />
       )}
 
-      {/* Scrollable content */}
+      <Toast message={toast} />
+
       <div style={{ paddingBottom: 120 }}>
         {activeTab === 'upload' && (
           <UploadTab
@@ -1897,6 +2349,7 @@ export default function Home() {
             onGoGallery={() => setActiveTab('gallery')}
             timings={timings}
             iterationsCount={config.iterations}
+            failedItems={errors}
           />
         )}
 
@@ -1906,8 +2359,12 @@ export default function Home() {
             isGenerating={isGenerating}
             progress={progress}
             onDownload={handleDownload}
-            onDownloadAll={() => handleDownloadAll(results)}
+            onDownloadAll={handleDownloadAll}
             onNewBatch={handleNewBatch}
+            failedItems={errors}
+            onRetryFailed={handleRetryFailed}
+            onRegenerate={handleRegenerate}
+            regeneratingIds={regeneratingIds}
           />
         )}
       </div>
