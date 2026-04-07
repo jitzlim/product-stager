@@ -27,7 +27,7 @@ export async function POST(request) {
 
   try {
     const body = await request.json()
-    const { productImageBase64, mimeType, prompt } = body
+    const { productImageBase64, mimeType, prompt, aspectRatio } = body
 
     if (!productImageBase64 || !mimeType || !prompt) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -53,7 +53,7 @@ export async function POST(request) {
       config: {
         responseModalities: ['TEXT', 'IMAGE'],
         imageConfig: {
-          aspectRatio: '9:16',
+          aspectRatio: aspectRatio || '9:16',
         },
       },
     })

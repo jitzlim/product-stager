@@ -304,7 +304,7 @@ function GalleryIcon({ size = 22, color }) {
 
 // ─── History Panel ────────────────────────────────────────────────────────────
 
-function HistoryPanel({ history, onClose, onDownload }) {
+function HistoryPanel({ history, onClose, onDownload, onClearAll }) {
   if (history.length === 0) {
     return (
       <div style={{
@@ -343,10 +343,16 @@ function HistoryPanel({ history, onClose, onDownload }) {
             <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
           </svg>
         </button>
-        <div>
+        <div style={{ flex: 1 }}>
           <Label>Generation History</Label>
           <div style={{ color: C.muted, fontSize: 12, marginTop: 2 }}>{history.length} batch{history.length !== 1 ? 'es' : ''} this session</div>
         </div>
+        <button
+          onClick={() => { if (window.confirm('Clear all data including history, results, and products?')) { onClearAll(); onClose() } }}
+          style={{ background: 'none', border: `1px solid rgba(255,80,80,0.3)`, borderRadius: 9999, padding: '6px 12px', color: '#ff6b6b', fontWeight: 700, fontSize: 11, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}
+        >
+          Clear All
+        </button>
       </div>
 
       <div style={{ padding: '0 20px 40px', display: 'flex', flexDirection: 'column', gap: 28 }}>
@@ -625,6 +631,10 @@ function UploadTab({ products, onFilesAdded, onToggleProduct, onSelectAll, onDel
 
 // ─── Configure Tab ────────────────────────────────────────────────────────────
 
+const ASPECT_RATIOS = ['9:16', '1:1', '4:3', '16:9']
+
+function ConfigureTab({ config, onChange, onGenerate, selectedProductCount, presets, activePreset, onSavePreset, onLoadPreset, onDeletePreset }) {
+  const { handModel, selectedBgs, smartMix, customInstructions, iterations, aspectRatio } = config
 function ConfigureTab({ config, onChange, onGenerate, selectedProductCount }) {
   const { handModel, selectedBgs, smartMix, customInstructions, iterations, promptTemplate } = config
   const totalImages  = selectedProductCount * iterations
@@ -651,6 +661,80 @@ function ConfigureTab({ config, onChange, onGenerate, selectedProductCount }) {
         <p style={{ color: C.muted, fontSize: 14, margin: 0, lineHeight: 1.6 }}>
           Configure the aesthetic DNA of your lifestyle generation. Choose hand models, environments, and creative direction.
         </p>
+      </div>
+
+      {/* Config Presets */}
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+          <Label>Presets</Label>
+          {activePreset && (
+            <div style={{ background: 'rgba(165,165,255,0.15)', borderRadius: 9999, padding: '2px 10px' }}>
+              <span style={{ fontFamily: 'Manrope, sans-serif', fontSize: 10, fontWeight: 800, color: C.primary }}>{activePreset}</span>
+            </div>
+          )}
+        </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {presets.length > 0 && (
+            <select
+              value={activePreset || ''}
+              onChange={(e) => e.target.value && onLoadPreset(e.target.value)}
+              style={{
+                flex: 1,
+                background: C.high,
+                border: `1px solid ${C.ghost}`,
+                borderRadius: 12,
+                padding: '10px 12px',
+                fontSize: 13,
+                color: activePreset ? 'white' : C.muted,
+                fontFamily: 'Plus Jakarta Sans, sans-serif',
+                cursor: 'pointer',
+                outline: 'none',
+              }}
+            >
+              <option value="">Load Preset…</option>
+              {presets.map(p => (
+                <option key={p.name} value={p.name}>{p.name}</option>
+              ))}
+            </select>
+          )}
+          <button
+            onClick={() => {
+              const name = window.prompt('Name this preset:')
+              if (name?.trim()) onSavePreset(name.trim())
+            }}
+            style={{
+              background: 'rgba(165,165,255,0.1)',
+              border: `1px solid rgba(165,165,255,0.25)`,
+              borderRadius: 12,
+              padding: '10px 14px',
+              fontSize: 12,
+              fontWeight: 700,
+              color: C.primary,
+              cursor: 'pointer',
+              fontFamily: 'Plus Jakarta Sans, sans-serif',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            + Save
+          </button>
+          {activePreset && (
+            <button
+              onClick={() => onDeletePreset(activePreset)}
+              style={{
+                background: 'rgba(255,80,80,0.08)',
+                border: `1px solid rgba(255,80,80,0.2)`,
+                borderRadius: 12,
+                padding: '10px 12px',
+                fontSize: 14,
+                color: '#ff6b6b',
+                cursor: 'pointer',
+              }}
+              title="Delete preset"
+            >
+              🗑
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Hand Model */}
@@ -808,6 +892,35 @@ function ConfigureTab({ config, onChange, onGenerate, selectedProductCount }) {
         </div>
       </div>
 
+      {/* Aspect Ratio */}
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+          <Label>Aspect Ratio</Label>
+        </div>
+        <div style={{ display: 'flex', gap: 4, background: C.high, borderRadius: 14, padding: 4 }}>
+          {ASPECT_RATIOS.map((ratio) => (
+            <button
+              key={ratio}
+              onClick={() => onChange({ aspectRatio: ratio })}
+              style={{
+                flex: 1,
+                padding: '9px 4px',
+                borderRadius: 10,
+                border: 'none',
+                background: aspectRatio === ratio ? gradCTA : 'none',
+                color: aspectRatio === ratio ? 'white' : C.muted,
+                fontFamily: 'Manrope, sans-serif',
+                fontSize: 11,
+                fontWeight: 800,
+                cursor: 'pointer',
+                letterSpacing: 0.5,
+                transition: 'all 0.15s',
+                boxShadow: aspectRatio === ratio ? `0 0 12px rgba(165,165,255,0.3)` : 'none',
+              }}
+            >
+              {ratio}
+            </button>
+          ))}
       {/* Photo Style — F-07 */}
       <div style={{ marginBottom: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
@@ -995,6 +1108,10 @@ function ConfigureTab({ config, onChange, onGenerate, selectedProductCount }) {
 
 // ─── Generate Tab (Progress) ──────────────────────────────────────────────────
 
+function GenerateTab({ progress, animatedPercent, isGenerating, products, onCancel, onGoGallery, timings, iterationsCount }) {
+  const avgElapsed = timings.length > 0
+    ? Math.round(timings.reduce((a, b) => a + b, 0) / timings.length / 1000)
+    : 15
 function GenerateTab({ progress, animatedPercent, isGenerating, products, onCancel, onGoGallery, failedItems }) {
   const percent = progress.total > 0
     ? Math.round(animatedPercent)
@@ -1078,6 +1195,15 @@ function GenerateTab({ progress, animatedPercent, isGenerating, products, onCanc
           </div>
           <div style={{ ...glassBase, borderRadius: 18, overflow: 'hidden' }}>
             {products.filter(p => p.selected).slice(0, 4).map((product, i) => {
+              const iterCount = iterationsCount || 1
+              const completedCalls = i * iterCount
+              const isDone = completedCalls < progress.current && (i + 1) * iterCount <= progress.current
+              const isActive = !isDone && completedCalls < progress.current + iterCount && isGenerating
+              // Average elapsed for this product's completed calls (in seconds)
+              const productTimings = timings.slice(completedCalls, completedCalls + iterCount)
+              const productAvg = productTimings.length > 0
+                ? Math.round(productTimings.reduce((a, b) => a + b, 0) / productTimings.length / 1000)
+                : null
               const isDone   = i < progress.current
               const isActive = i === progress.current && isGenerating
               const hasFail  = isDone && productHasFailed(product)
@@ -1106,6 +1232,10 @@ function GenerateTab({ progress, animatedPercent, isGenerating, products, onCanc
                     <div style={{ fontWeight: 700, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {product.name}
                     </div>
+                    <div style={{ fontFamily: 'Manrope, sans-serif', fontSize: 11, color: C.muted, marginTop: 2 }}>
+                      {isDone
+                        ? productAvg !== null ? `Complete · ${productAvg}s avg` : 'Complete'
+                        : isActive ? 'Processing...' : 'Queued'}
                     <div style={{ fontFamily: 'Manrope, sans-serif', fontSize: 11, color: hasFail ? C.danger : C.muted, marginTop: 2 }}>
                       {isDone ? (hasFail ? 'Partially failed' : 'Complete') : isActive ? 'Processing...' : 'Queued'}
                     </div>
@@ -1135,7 +1265,7 @@ function GenerateTab({ progress, animatedPercent, isGenerating, products, onCanc
                   ESTIMATED REMAINING
                 </span>
                 <span style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, color: 'white', fontSize: 16 }}>
-                  ~{(progress.total - progress.current) * 15}s
+                  ~{(progress.total - progress.current) * avgElapsed}s
                 </span>
               </div>
             )}
@@ -1496,7 +1626,7 @@ function GalleryTab({ results, isGenerating, progress, onDownload, onDownloadAll
                         position: 'relative',
                         borderRadius: 16,
                         overflow: 'hidden',
-                        aspectRatio: '9/16',
+                        aspectRatio: (result.aspectRatio || '9:16').replace(':', '/'),
                         cursor: 'pointer',
                         outline: isSel ? `2px solid ${C.primary}` : '2px solid transparent',
                         boxShadow: isSel ? `0 0 20px rgba(165,165,255,0.2)` : 'none',
@@ -1635,6 +1765,8 @@ function GalleryTab({ results, isGenerating, progress, onDownload, onDownloadAll
               {/* Loading placeholders while generating */}
               {isGenerating && group === groups[groups.length - 1] && (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 10 }}>
+                  {Array.from({ length: progress.total - progress.current }).map((_, i) => (
+                    <div key={`ph-${i}`} style={{ borderRadius: 16, overflow: 'hidden', aspectRatio: (results[0]?.aspectRatio || '9:16').replace(':', '/') }} className="skeleton" />
                   {Array.from({ length: Math.max(0, progress.total - progress.current) }).map((_, i) => (
                     <div key={`ph-${i}`} style={{ borderRadius: 16, overflow: 'hidden', aspectRatio: '9/16' }} className="skeleton" />
                   ))}
@@ -1696,6 +1828,7 @@ export default function Home() {
     smartMix:           false,
     customInstructions: '',
     iterations:         1,
+    aspectRatio:        '9:16',
     promptTemplate:     'ugc',
   })
 
@@ -1723,6 +1856,24 @@ export default function Home() {
     }
   }, [])
 
+  // History — previous batches this session
+  const [history,      setHistory]      = useState([])
+  const [showHistory,  setShowHistory]  = useState(false)
+
+  // Generation timings (ms per API call, for rolling average)
+  const [timings,      setTimings]      = useState([])
+
+  // Config presets
+  const [presets,      setPresets]      = useState([])
+  const [activePreset, setActivePreset] = useState(null)
+
+  // localStorage hydration guard — don't persist until after first hydration
+  const [mounted,      setMounted]      = useState(false)
+
+  // Animate the progress ring while waiting for each API call.
+  // Ticks toward a "soft ceiling" just below the next real step so
+  // the ring always moves while generating, then snaps forward when
+  // an item actually finishes.
   // ── Progress ring animation ─────────────────────────────────────────────────
   useEffect(() => {
     if (!isGenerating || progress.total === 0) return
@@ -1749,9 +1900,93 @@ export default function Home() {
     }
   }, [isGenerating, progress.total])
 
-  const updateConfig = (partial) => setConfig(prev => ({ ...prev, ...partial }))
+  // ── localStorage hydration (once on mount) ────────────────────────────────
+  useEffect(() => {
+    try {
+      const c = localStorage.getItem('kinetic_config')
+      if (c) setConfig(prev => ({ ...prev, ...JSON.parse(c) }))
+      const h = localStorage.getItem('kinetic_history')
+      if (h) setHistory(JSON.parse(h))
+      const r = localStorage.getItem('kinetic_results')
+      if (r) setResults(JSON.parse(r))
+      const p = localStorage.getItem('kinetic_products')
+      if (p) setProducts(JSON.parse(p))
+      const pr = localStorage.getItem('kinetic_presets')
+      if (pr) setPresets(JSON.parse(pr))
+    } catch (e) {
+      console.warn('localStorage restore failed', e)
+    }
+    setMounted(true)
+  }, [])
+
+  // ── localStorage persistence (only after hydration) ───────────────────────
+  useEffect(() => {
+    if (!mounted) return
+    try { localStorage.setItem('kinetic_config', JSON.stringify(config)) } catch {}
+  }, [config, mounted])
+
+  useEffect(() => {
+    if (!mounted) return
+    try { localStorage.setItem('kinetic_history', JSON.stringify(history)) } catch {}
+  }, [history, mounted])
+
+  useEffect(() => {
+    if (!mounted) return
+    try { localStorage.setItem('kinetic_results', JSON.stringify(results)) } catch {}
+  }, [results, mounted])
+
+  useEffect(() => {
+    if (!mounted) return
+    try { localStorage.setItem('kinetic_products', JSON.stringify(products)) } catch {}
+  }, [products, mounted])
+
+  useEffect(() => {
+    if (!mounted) return
+    try { localStorage.setItem('kinetic_presets', JSON.stringify(presets)) } catch {}
+  }, [presets, mounted])
+
+  const updateConfig = (partial) => {
+    setConfig(prev => ({ ...prev, ...partial }))
+    setActivePreset(null) // unsaved change → clear active preset badge
+  }
   const selectedProducts = products.filter(p => p.selected)
 
+  // ── Preset handlers ────────────────────────────────────────────────────────
+  const handleSavePreset = (name) => {
+    setPresets(prev => {
+      const filtered = prev.filter(p => p.name !== name)
+      return [...filtered, { name, config: { ...config } }]
+    })
+    setActivePreset(name)
+  }
+
+  const handleLoadPreset = (name) => {
+    const preset = presets.find(p => p.name === name)
+    if (preset) {
+      setConfig(prev => ({ ...prev, ...preset.config }))
+      setActivePreset(name)
+    }
+  }
+
+  const handleDeletePreset = (name) => {
+    setPresets(prev => prev.filter(p => p.name !== name))
+    if (activePreset === name) setActivePreset(null)
+  }
+
+  // ── Clear all persisted data ───────────────────────────────────────────────
+  const handleClearAll = () => {
+    ['kinetic_config','kinetic_history','kinetic_results','kinetic_products','kinetic_presets'].forEach(k => {
+      try { localStorage.removeItem(k) } catch {}
+    })
+    setHistory([])
+    setResults([])
+    setProducts([])
+    setPresets([])
+    setActivePreset(null)
+    setConfig({ handModel: 'neutral', selectedBgs: [], smartMix: false, customInstructions: '', iterations: 1, aspectRatio: '9:16' })
+  }
+
+  // ── File handling ──────────────────────────────────────────────────────────
   // ── File handling ───────────────────────────────────────────────────────────
 
   const handleFilesAdded = useCallback((files) => {
@@ -1788,6 +2023,7 @@ export default function Home() {
     setResults([])
     setProgress({ current: 0, total })
     setAnimatedPercent(0)
+    setTimings([])
     setActiveTab('generate')
 
     const newResults = []
@@ -1802,14 +2038,18 @@ export default function Home() {
           ? bgPool[Math.floor(Math.random() * bgPool.length)]
           : bgPool[iter % bgPool.length]
 
+        const prompt = buildPrompt(config.handModel, bgId, config.customInstructions, config.aspectRatio)
         const prompt = buildPrompt(config.handModel, bgId, config.customInstructions, config.promptTemplate)
 
         try {
+          const t0   = Date.now()
           const res  = await fetch('/api/generate', {
             method:  'POST',
             headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({ productImageBase64: product.base64, mimeType: product.mimeType, prompt }),
+            body:    JSON.stringify({ productImageBase64: product.base64, mimeType: product.mimeType, prompt, aspectRatio: config.aspectRatio }),
           })
+          const elapsed = Date.now() - t0
+          setTimings(prev => [...prev, elapsed])
           const data = await res.json()
 
           if (data.imageBase64) {
@@ -1821,6 +2061,7 @@ export default function Home() {
               imageBase64:   data.imageBase64,
               imageMimeType: data.mimeType ?? 'image/jpeg',
               background:    bgId,
+              aspectRatio:   config.aspectRatio,
             })
             setResults([...newResults])
           } else {
@@ -2067,6 +2308,7 @@ export default function Home() {
           history={history}
           onClose={() => setShowHistory(false)}
           onDownload={handleDownload}
+          onClearAll={handleClearAll}
         />
       )}
 
@@ -2089,6 +2331,11 @@ export default function Home() {
             onChange={updateConfig}
             onGenerate={handleGenerate}
             selectedProductCount={selectedProducts.length}
+            presets={presets}
+            activePreset={activePreset}
+            onSavePreset={handleSavePreset}
+            onLoadPreset={handleLoadPreset}
+            onDeletePreset={handleDeletePreset}
           />
         )}
 
@@ -2100,6 +2347,8 @@ export default function Home() {
             products={products}
             onCancel={() => setIsGenerating(false)}
             onGoGallery={() => setActiveTab('gallery')}
+            timings={timings}
+            iterationsCount={config.iterations}
             failedItems={errors}
           />
         )}
