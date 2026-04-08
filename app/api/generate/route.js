@@ -1,6 +1,23 @@
 import { GoogleGenAI } from '@google/genai'
 import { NextResponse } from 'next/server'
 
+// In-memory rate limiter: 15 requests per IP per minute
+const rateLimitMap = new Map()
+function isRateLimited(ip) {
+  const now = Date.now()
+  const windowMs = 60_000
+  const max = 15
+  const entry = rateLimitMap.get(ip) ?? { count: 0, start: now }
+  if (now - entry.start > windowMs) {
+    rateLimitMap.set(ip, { count: 1, start: now })
+    return false
+  }
+  if (entry.count >= max) return true
+  entry.count++
+  rateLimitMap.set(ip, entry)
+  return false
+}
+
 // Scrub anything that looks like an API key from error messages before sending to client
 function safeErrorMessage(err) {
   const msg = err?.message ?? 'Generation failed'
@@ -14,23 +31,39 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Service not configured' }, { status: 503 })
   }
 
+  // Guard: rate limit per IP
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown'
+  if (isRateLimited(ip)) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+  }
+
   // Guard: block requests that aren't from the same origin in production
   const origin = request.headers.get('origin')
   const host   = request.headers.get('host')
-  if (
-    process.env.NODE_ENV === 'production' &&
-    origin &&
-    !origin.includes(host ?? '')
-  ) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (process.env.NODE_ENV === 'production' && origin) {
+    try {
+      const originHostname = new URL(origin).hostname
+      const hostHostname   = new URL(`https://${host}`).hostname
+      if (originHostname !== hostHostname) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+    } catch {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
   }
+
+  const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
 
   try {
     const body = await request.json()
-    const { productImageBase64, mimeType, prompt, aspectRatio } = body
+    const { productImageBase64, mimeType, prompt } = body
 
     if (!productImageBase64 || !mimeType || !prompt) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    }
+
+    if (!ALLOWED_MIME_TYPES.includes(mimeType)) {
+      return NextResponse.json({ error: 'Invalid image format' }, { status: 400 })
     }
 
     // Limit image size to 10MB base64 (~7.5MB actual) to prevent abuse
@@ -53,7 +86,7 @@ export async function POST(request) {
       config: {
         responseModalities: ['TEXT', 'IMAGE'],
         imageConfig: {
-          aspectRatio: aspectRatio || '9:16',
+          aspectRatio: '9:16',
         },
       },
     })
